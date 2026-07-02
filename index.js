@@ -19,7 +19,7 @@ async function startBot() {
 
   sock.ev.on("creds.update", saveCreds);
 
-  sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
+  sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
     if (connection === "open") {
       console.log("✅ WhatsApp Connected!");
     }
@@ -36,10 +36,13 @@ async function startBot() {
 
   if (!state.creds.registered) {
     setTimeout(async () => {
-  const code = await sock.requestPairingCode("919238353537");
-  console.log("Pairing Code:", code);
-}, 5000);
-    console.log("Pairing Code:", code);
+      try {
+        const code = await sock.requestPairingCode("919238353537");
+        console.log("Pairing Code:", code);
+      } catch (err) {
+        console.error("Pairing Error:", err);
+      }
+    }, 5000);
   }
 }
 
