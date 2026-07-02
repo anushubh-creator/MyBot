@@ -1,23 +1,43 @@
-const { Client, LocalAuth } = require("whatsapp-web.js");
-const qrcode = require("qrcode-terminal");
+const {
+  default: makeWASocket,
+  useMultiFileAuthState,
+  fetchLatestBaileysVersion,
+  DisconnectReason
+} = require("@whiskeysockets/baileys");
 
-const client = new Client({
-  authStrategy: new LocalAuth()
-});
+const P = require("pino");
 
-client.on("qr", (qr) => {
-  console.log("QR Code:");
-  qrcode.generate(qr, { small: true });
-});
+async function startBot() {
+  const { state, saveCreds } = await useMultiFileAuthState("session");
+  const { version } = await fetchLatestBaileysVersion();
 
-client.on("ready", () => {
-  console.log("✅ Bot Connected!");
-});
+  const sock = makeWASocket({
+    version,
+    auth: state,
+    logger: P({ level: "silent" })
+  });
 
-client.on("message", async (message) => {
-  if (message.fromMe) return;
+  sock.ev.on("creds.update", saveCreds);
 
-  await message.reply("🙏 Namaste! Aapka message mil gaya. Jaldi reply karenge.");
-});
+  sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
+    if (connection === "open") {
+      console.log("✅ WhatsApp Connected!");
+    }
 
-client.initialize();
+    if (connection === "close") {
+      const shouldReconnect =
+        lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+
+      if (shouldReconnect) {
+        startBot();
+      }
+    }
+  });
+
+  if (!state.creds.registered) {
+    const code = await sock.requestPairingCode("919238353537");
+    console.log("Pairing Code:", code);
+  }
+}
+
+startBot();
