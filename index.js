@@ -35,7 +35,10 @@ async function startBot() {
   });
 
   if (!state.creds.registered) {
-    const code = await sock.requestPairingCode("919238353537");
+    setTimeout(async () => {
+  const code = await sock.requestPairingCode("919238353537");
+  console.log("Pairing Code:", code);
+}, 5000);
     console.log("Pairing Code:", code);
   }
 }
